@@ -13,5 +13,5 @@ openai_client = openai.OpenAI(api_key=api_key)
 
 # Model specifications and cutoffs
 modelspec = "gpt-4o"  # gpt-4, gpt-4o, gpt-4o-mini
-cutoff_questions = 0
-cutoff_parties = 0
+cutoff_questions = 4
+cutoff_parties = 4

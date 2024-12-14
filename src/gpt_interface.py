@@ -39,18 +39,26 @@ def AskChatGPT(filepath, i, j, country):
     max_tokens = 200 
 
     # # Uncomment below for actual ChatGPT usage
-    # response = openai_client.chat.completions.create(
-    #     model=modelspec,
-    #     messages=messages,
-    #     temperature=temperature,
-    #     max_tokens=max_tokens,
-    #     top_p=1,
-    #     frequency_penalty=1,
-    #     presence_penalty=1
-    # )
-    # return response.choices[0].message.content
+    response = openai_client.chat.completions.create(
+        model=modelspec,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        top_p=1,
+        frequency_penalty=1,
+        presence_penalty=1
+    )
+    # print(response.choices[0].message.content)
+    response_content = response.choices[0].message.content
+    # Remove ```json and ``` if present
+    response_content = response_content.replace('```json', '').replace('```', '')
+    try:
+        return json.loads(response_content)
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON response: {response_content}")
+        return {}
 
-    return "disagree"
+
 
 def execute_calc2(filepath):
     country, party_names_length, num_unique_questions, data_Party, party_names, full_party_names, unique_questions, party_answers = SpecsOfData(filepath)
@@ -70,6 +78,9 @@ def execute_calc2(filepath):
     
     # Create a matrix to store answers
     answer_matrix = np.zeros((num_unique_questions, party_names_length))
+    # Calculate total iterations for progress bar
+    total_iterations = party_names_length * num_unique_questions
+    current_iteration = 0
     
     for i in range(party_names_length):
         for j in range(num_unique_questions):
@@ -84,10 +95,18 @@ def execute_calc2(filepath):
             
             # Convert response to numerical value (-1, 0, 1)
             try:
-                answer_matrix[j][i] = convert_answer_to_number(response)
+                print('ai answer', response["AI_answer"])
+                answer_matrix[j][i] = convert_answer_to_number(response["AI_answer"])
             except:
+                print(f"Error converting answer to number: {response}")
                 answer_matrix[j][i] = 0  # Default to neutral if there's an error
+            
+            # Update and display progress bar
+            current_iteration += 1
+            progress = int(50 * current_iteration / total_iterations)
+            print(f"\rProgress: [{'=' * progress}{' ' * (50-progress)}] {current_iteration}/{total_iterations}", end='')
     
+    print()  # New line after progress bar completes
     # Save the matrix to CSV
     np.savetxt("results.csv", answer_matrix, delimiter=",")
     
