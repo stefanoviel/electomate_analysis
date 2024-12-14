@@ -1,0 +1,202 @@
+[
+    {
+        "question": "Beim Bau neuer Wohngebäude in der EU soll die Errichtung von Photovoltaikanlagen verpflichtend sein.",
+        "question_number": "0",
+        "Full Party Name": "Christlich Demokratische Union Deutschlands / Christlich-Soziale Union in Bayern e.V.",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "While we support renewable energy, mandating photovoltaic installations may not be feasible for all regions and could impose financial burdens. We advocate for incentives rather than obligations to encourage sustainable building practices.",
+        "AI_confidence": 85
+    },
+    {
+        "question": "Beim Bau neuer Wohngebäude in der EU soll die Errichtung von Photovoltaikanlagen verpflichtend sein.",
+        "question_number": "0",
+        "Full Party Name": "BÜNDNIS 90/DIE GRÜNEN",
+        "AI_answer": "agree",
+        "AI_answer_reason": "Die Verpflichtung zur Installation von Photovoltaikanlagen bei Neubauten fördert den Ausbau erneuerbarer Energien und trägt zum Klimaschutz bei. Zudem kann sie langfristig zu einer Senkung der Energiekosten für Haushalte führen.",
+        "AI_confidence": 95
+    },
+    {
+        "question": "Beim Bau neuer Wohngebäude in der EU soll die Errichtung von Photovoltaikanlagen verpflichtend sein.",
+        "question_number": "0",
+        "Full Party Name": "Sozialdemokratische Partei Deutschlands",
+        "AI_answer": "agree",
+        "AI_answer_reason": "Die SPD unterstützt Maßnahmen zur Förderung erneuerbarer Energien und sieht in der Verpflichtung zur Installation von Photovoltaikanlagen einen wichtigen Schritt zum Klimaschutz. Solche Maßnahmen tragen dazu bei, den CO2-Ausstoß zu reduzieren und die Energieunabhängigkeit zu stärken.",
+        "AI_confidence": 85
+    },
+    {
+        "question": "Error processing question 0",
+        "question_number": "0",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Error processing question 0",
+        "question_number": "0",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Die EU soll vorrangig ökologische Landwirtschaft fördern.",
+        "question_number": "1",
+        "Full Party Name": "Christlich Demokratische Union Deutschlands / Christlich-Soziale Union in Bayern e.V.",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "While we support sustainable agricultural practices, it is important to balance ecological goals with economic viability and food security. A comprehensive approach that includes both conventional and organic farming methods may be more effective.",
+        "AI_confidence": 85
+    },
+    {
+        "question": "Error processing question 1",
+        "question_number": "1",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Die EU soll vorrangig ökologische Landwirtschaft fördern.",
+        "question_number": "1",
+        "Full Party Name": "Sozialdemokratische Partei Deutschlands",
+        "AI_answer": "agree",
+        "AI_answer_reason": "Die SPD unterstützt nachhaltige und umweltfreundliche Praktiken, die zur Erhaltung der natürlichen Ressourcen beitragen. Ökologische Landwirtschaft ist ein wichtiger Schritt in Richtung einer nachhaltigeren Zukunft.",
+        "AI_confidence": 85
+    },
+    {
+        "question": "Die EU soll vorrangig ökologische Landwirtschaft fördern.",
+        "question_number": "1",
+        "Full Party Name": "Alternative für Deutschland",
+        "AI_answer": "disagree",
+        "AI_answer_reason": "The AfD generally supports conventional agriculture and prioritizes economic efficiency over ecological considerations. They believe that a focus on organic farming could lead to increased costs for farmers and consumers.",
+        "AI_confidence": 85
+    },
+    {
+        "question": "Die EU soll vorrangig ökologische Landwirtschaft fördern.",
+        "question_number": "1",
+        "Full Party Name": "DIE LINKE",
+        "AI_answer": "agree",
+        "AI_answer_reason": "DIE LINKE supports sustainable and ecological agriculture to protect the environment and ensure food security. Promoting organic farming aligns with our goals of reducing chemical use and supporting biodiversity.",
+        "AI_confidence": 90
+    },
+    {
+        "question": "Error processing question 2",
+        "question_number": "2",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Error processing question 2",
+        "question_number": "2",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Die EU soll den Mitgliedstaaten empfehlen, außer „weiblich“ und „männlich“ auch die Eintragung einer anderen Geschlechtsidentität im Pass zu ermöglichen.",
+        "question_number": "2",
+        "Full Party Name": "Sozialdemokratische Partei Deutschlands",
+        "AI_answer": "agree",
+        "AI_answer_reason": "Die SPD setzt sich für Vielfalt und Gleichberechtigung ein und unterstützt Maßnahmen zur Anerkennung verschiedener Geschlechtsidentitäten. Eine solche Empfehlung der EU würde die Rechte von nicht-binären Personen stärken.",
+        "AI_confidence": 90
+    },
+    {
+        "question": "Error processing question 2",
+        "question_number": "2",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Error processing question 2",
+        "question_number": "2",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Error processing question 3",
+        "question_number": "3",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Die EU soll eine eigene Seenotrettung im Mittelmeer aufbauen.",
+        "question_number": "3",
+        "Full Party Name": "BÜNDNIS 90/DIE GRÜNEN",
+        "AI_answer": "agree",
+        "AI_answer_reason": "Wir unterstützen die Einrichtung einer eigenen Seenotrettung durch die EU, um Menschenleben zu retten und humanitäre Verantwortung zu übernehmen. Eine koordinierte europäische Lösung ist notwendig, um effektiver und sicherer agieren zu können.",
+        "AI_confidence": 95
+    },
+    {
+        "question": "Die EU soll eine eigene Seenotrettung im Mittelmeer aufbauen.",
+        "question_number": "3",
+        "Full Party Name": "Sozialdemokratische Partei Deutschlands",
+        "AI_answer": "agree",
+        "AI_answer_reason": "The SPD supports a humanitarian approach to migration and believes in the importance of saving lives at sea. Establishing an EU-led search and rescue operation aligns with our commitment to human rights and international solidarity.",
+        "AI_confidence": 90
+    },
+    {
+        "question": "Error processing question 3",
+        "question_number": "3",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Error processing question 3",
+        "question_number": "3",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Die EU soll Vorgaben für die Höhe der sozialen Grundsicherung in den Mitgliedstaaten machen.",
+        "question_number": "4",
+        "Full Party Name": "Christlich Demokratische Union Deutschlands / Christlich-Soziale Union in Bayern e.V.",
+        "AI_answer": "disagree",
+        "AI_answer_reason": "We believe that social policy, including the determination of social security levels, should remain a national competence to respect the diverse economic conditions and welfare systems across member states. This allows for tailored solutions that best fit each country's specific needs and circumstances.",
+        "AI_confidence": 90
+    },
+    {
+        "question": "Die EU soll Vorgaben für die Höhe der sozialen Grundsicherung in den Mitgliedstaaten machen.",
+        "question_number": "4",
+        "Full Party Name": "BÜNDNIS 90/DIE GRÜNEN",
+        "AI_answer": "agree",
+        "AI_answer_reason": "Wir unterstützen eine stärkere soziale Dimension in der EU, um Ungleichheiten zu verringern und ein soziales Sicherheitsnetz für alle Bürgerinnen und Bürger zu gewährleisten. Einheitliche Mindeststandards können helfen, Armut zu bekämpfen und soziale Gerechtigkeit innerhalb Europas zu fördern.",
+        "AI_confidence": 85
+    },
+    {
+        "question": "Error processing question 4",
+        "question_number": "4",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    },
+    {
+        "question": "Die EU soll Vorgaben für die Höhe der sozialen Grundsicherung in den Mitgliedstaaten machen.",
+        "question_number": "4",
+        "Full Party Name": "Alternative für Deutschland",
+        "AI_answer": "disagree",
+        "AI_answer_reason": "The AfD generally supports national sovereignty and believes that social policies should be determined by individual member states, not the EU. Centralized control over social security could undermine local governance and economic conditions.",
+        "AI_confidence": 95
+    },
+    {
+        "question": "Error processing question 4",
+        "question_number": "4",
+        "Full Party Name": "Error",
+        "AI_answer": "neutral",
+        "AI_answer_reason": "Error: Expecting value: line 1 column 1 (char 0)",
+        "AI_confidence": "0"
+    }
+]
