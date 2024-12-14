@@ -2,6 +2,7 @@ from data_processing import load_and_process_data
 from gpt_interface import execute_calc2
 from visualization import create_comparison_plot
 import numpy as np
+import json
 
 def main():
     # Set the cutoffs for parties and questions
@@ -19,10 +20,20 @@ def main():
         "results.json"
     )
     
+    # Load short questions from JSON file
+
+    with open('short_question.json', 'r', encoding='utf-8') as file:
+        short_questions = json.load(file)['questions']
+    
+    # Replace long questions with short versions
+    questions = short_questions[:len(questions)]
+
     # Step 3: Create and save comparison plot
     print("\nCreating comparison plot...")
     create_comparison_plot(original_matrix, ai_matrix, questions, party_names)
     print("Comparison plot saved as 'comparison_plot.png'")
+
+
     
     # Print statistics
     agreement = np.sum(original_matrix == ai_matrix)

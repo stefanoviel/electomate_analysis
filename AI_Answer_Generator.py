@@ -225,6 +225,8 @@ def load_and_process_data(original_file, ai_results_file):
                 ai_matrix[i][j] = 0  # Default to neutral for missing/invalid answers
             k += 1
 
+    print(ai_matrix)
+
     print(f"Processed {num_questions} questions for {num_parties} parties")
     return original_matrix, ai_matrix, questions, party_names
 
