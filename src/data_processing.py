@@ -15,23 +15,27 @@ def SpecsOfData(file_path):
     
     party_names = data_Party['party_names']
     full_party_names = data_Party['party_full_names']
-    party_names_length = len(party_names)
 
     unique_questions = set()
     for answer in data_Party['party_answers']:
         if answer['Party_Name'] == party_names[0]:
             unique_questions.add(answer['Question_Label'])
 
+    num_unique_questions = len(unique_questions)
+    party_names_length = len(party_names)
+
+
+
     unique_questions = list(unique_questions)
     if cutoff_questions != 0:
         unique_questions = unique_questions[:cutoff_questions]
+        num_unique_questions = cutoff_questions
     
     if cutoff_parties != 0:
         full_party_names = full_party_names[:cutoff_parties]
         party_names = party_names[:cutoff_parties]
+        party_names_length = cutoff_parties
 
-    num_unique_questions = len(unique_questions)
-    party_names_length = len(party_names)
 
     return (
         "Germany",
@@ -52,35 +56,32 @@ def convert_answer_to_number(answer):
     }
     return answer_map.get(answer.lower(), 0)
 
-def load_and_process_data(original_file, ai_results_file):
+def load_and_process_data(original_file):
     with open(original_file, 'r', encoding='utf-8') as file:
         raw_data = file.read()
         cleaned_data = clean_json_string(raw_data)
         original_data = json.loads(cleaned_data)
-    
-    with open(ai_results_file, 'r', encoding='utf-8') as file:
-        ai_results = json.load(file)
+
 
     party_names = original_data['party_names']
     if cutoff_parties != 0:
         party_names = party_names[:cutoff_parties]
+        num_parties = cutoff_parties
     
     questions = []
     for answer in original_data['party_answers']:
         questions.append(answer['Question_Label'])
 
     questions = list(set(questions))
-    
-    
-    if cutoff_questions != 0:
-        questions = questions[:cutoff_questions]
 
-    
     num_questions = len(questions)
     num_parties = len(party_names)
     
+    if cutoff_questions != 0:
+        questions = questions[:cutoff_questions]
+        num_questions = cutoff_questions
+    
     original_matrix = np.zeros((num_questions, num_parties))
-    ai_matrix = np.zeros((num_questions, num_parties))
 
     for answer in original_data['party_answers']:
         if answer['Party_Name'] in party_names:
@@ -89,18 +90,10 @@ def load_and_process_data(original_file, ai_results_file):
                 q_idx = questions.index(answer['Question_Label'])
                 original_matrix[q_idx][party_idx] = answer['Party_Answer']
 
-    k = 0
-    for i in range(num_questions):
-        for j in range(num_parties):
-            try:
-                ai_matrix[i][j] = convert_answer_to_number(ai_results[k]['AI_answer'])
-            except (IndexError, KeyError) as e:
-                print(f"Warning: Missing or invalid AI answer for question {i}, party {j}")
-                ai_matrix[i][j] = 0
-            k += 1
+
 
     print(f"Processed {num_questions} questions for {num_parties} parties")
-    return original_matrix, ai_matrix, questions, party_names
+    return original_matrix, questions, party_names
 
 def create_original_matrix(json_file_path):
     with open(json_file_path, 'r', encoding='utf-8') as file:

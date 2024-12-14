@@ -50,7 +50,7 @@ def AskChatGPT(filepath, i, j, country):
     # )
     # return response.choices[0].message.content
 
-    return "agree"
+    return "disagree"
 
 def execute_calc2(filepath):
     country, party_names_length, num_unique_questions, data_Party, party_names, full_party_names, unique_questions, party_answers = SpecsOfData(filepath)
@@ -91,4 +91,4 @@ def execute_calc2(filepath):
     # Save the matrix to CSV
     np.savetxt("results.csv", answer_matrix, delimiter=",")
     
-    return results
+    return answer_matrix

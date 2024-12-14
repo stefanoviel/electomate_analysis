@@ -10,18 +10,14 @@ def main():
     
     # Step 1: Generate AI answers
     print("Generating AI answers...")
-    ai_answers = execute_calc2(json_file_path)
+    ai_matrix = execute_calc2(json_file_path)
     print("AI answers generated and saved to 'results.json' and 'results.csv'")
     
     # Step 2: Load and process both original and AI data
     print("\nProcessing data for comparison...")
-    original_matrix, ai_matrix, questions, party_names = load_and_process_data(
-        json_file_path,
-        "results.json"
-    )
+    original_matrix, questions, party_names = load_and_process_data(json_file_path)
     
     # Load short questions from JSON file
-
     with open('short_question.json', 'r', encoding='utf-8') as file:
         short_questions = json.load(file)['questions']
     
@@ -34,7 +30,6 @@ def main():
     print("Comparison plot saved as 'comparison_plot.png'")
 
 
-    
     # Print statistics
     agreement = np.sum(original_matrix == ai_matrix)
     total = original_matrix.size
