@@ -71,6 +71,8 @@ def SpecsOfData(file_path):
 # Function to create messages and behaviors for each question and party
 def create_message(filepath):
     country,num_parties,num_questions,data, party_names,Party_Full_Names, questions, data_Country= SpecsOfData(filepath)
+
+
     
     messages_list = [["" for _ in range(len(Party_Full_Names))] for _ in range(len(questions))]
     behaviour_list = [["" for _ in range(len(Party_Full_Names))] for _ in range(len(questions))]
@@ -95,8 +97,6 @@ def create_message(filepath):
 def AskChatGPT(filepath, i, j, country):
     message2, behaviour2 = create_message(filepath)
 
-    print("behaviour2", behaviour2[i][j])
-    print("message2", message2[i][j])
     
     messages = [
         {"role": "system", "content": behaviour2[i][j]},
@@ -106,16 +106,17 @@ def AskChatGPT(filepath, i, j, country):
     max_tokens = 200 
 
     # Uncomment below for actual ChatGPT usage
-    response = openai_client.chat.completions.create(
-        model=modelspec,
-        messages=messages,
-        temperature=temperature,
-        max_tokens=max_tokens,
-        top_p=1,
-        frequency_penalty=1,
-        presence_penalty=1
-    )
-    return response.choices[0].message.content
+    # response = openai_client.chat.completions.create(
+    #     model=modelspec,
+    #     messages=messages,
+    #     temperature=temperature,
+    #     max_tokens=max_tokens,
+    #     top_p=1,
+    #     frequency_penalty=1,
+    #     presence_penalty=1
+    # )
+    # return response.choices[0].message.content
+    return "neutral"
 
 # Function to execute the calculation and generate the answer matrix and JSON using ChatGPT
 def execute_calc2(filepath):
@@ -167,31 +168,6 @@ def execute_calc2(filepath):
     np.savetxt(csv_file, GPT_Answer_Matrix, delimiter=",")
 
     return answers_list
-
-def test_three_parties(json_file_path):
-    """
-    Run a test with only 3 parties using ChatGPT.
-    """
-    global cutoff_parties, cutoff_questions
-    original_party_cutoff = cutoff_parties
-    
-    cutoff_parties = 3
-    cutoff_questions = 3
-    
-    try:
-        print("Starting test with ChatGPT for 3 parties...")
-        print("This will generate 9 responses (3 parties × 3 questions)")
-        
-        results = execute_calc2(json_file_path)
-        
-        print("\nTest completed successfully!")
-        print("Results have been saved to the AI_Answers_CSV and AI_JSON folders")
-        
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-    
-    finally:
-        cutoff_parties = original_party_cutoff
 
 # Add this function to convert the word answers to numbers
 def convert_answer_to_number(answer):
@@ -332,8 +308,8 @@ def create_original_matrix(json_file_path):
 # Main execution
 if __name__ == "__main__":
     # Set the cutoffs for parties and questions
-    cutoff_parties = 5   # Example: test with 3 parties
-    cutoff_questions = 5  # Example: test with 3 questions
+    cutoff_parties = 3  # Example: test with 3 parties
+    cutoff_questions = 0  # Example: test with 3 questions
     
     json_file_path = "Party_Answers_Converted_de.json"
     
