@@ -15,3 +15,4 @@ openai_client = openai.OpenAI(api_key=api_key)
 modelspec = "gpt-4o"  # gpt-4, gpt-4o, gpt-4o-mini
 cutoff_questions = 0
 cutoff_parties = 0
+is_rag_context = True

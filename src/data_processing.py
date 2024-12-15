@@ -90,8 +90,6 @@ def load_and_process_data(original_file):
                 q_idx = questions.index(answer['Question_Label'])
                 original_matrix[q_idx][party_idx] = answer['Party_Answer']
 
-
-
     print(f"Processed {num_questions} questions for {num_parties} parties")
     return original_matrix, questions, party_names
 

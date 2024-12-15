@@ -45,5 +45,5 @@ def create_comparison_plot(original_matrix, ai_matrix, questions, party_names):
     plt.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5))
 
     plt.tight_layout()
-    plt.savefig('comparison_plot.png', bbox_inches='tight', dpi=300)
+    plt.savefig('comparison_plot_rag.png', bbox_inches='tight', dpi=300)
     plt.show()
