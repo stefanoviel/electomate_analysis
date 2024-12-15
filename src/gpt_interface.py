@@ -1,41 +1,22 @@
 import json
 import time
 import numpy as np
-import logging
+
 from datetime import datetime
 from pathlib import Path
 from config import openai_client, modelspec, cutoff_parties, cutoff_questions, is_rag_context
 from data_processing import SpecsOfData, convert_answer_to_number
 
 from llama_index.core import StorageContext, load_index_from_storage
+import multiprocessing as mp
+from functools import partial
 
-# Set up logging
-def setup_logging():
-    # Create logs directory if it doesn't exist
-    Path("logs").mkdir(exist_ok=True)
-    
-    # Create a timestamp for the log file
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = f"logs/prompts_{timestamp}.log"
-    
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_filename),
-            logging.StreamHandler()
-        ]
-    )
-    return logging.getLogger(__name__)
-
-logger = setup_logging()
 
 # Load the index from storage
-print("Loading index...")
+# print("Loading index...")
 storage_context = StorageContext.from_defaults(persist_dir="index_store")
 index = load_index_from_storage(storage_context)
-print("Index loaded!")
+# print("Index loaded!")
 
 
 
@@ -61,17 +42,7 @@ def create_message(filepath):
 
     return messages_list,behaviour_list
 
-def log_prompt(messages, response_content, party_name, question):
-    """Log the prompt and response"""
-    log_entry = {
-        "timestamp": datetime.now().isoformat(),
-        "party": party_name,
-        "question": question,
-        "system_prompt": messages[0]["content"],
-        "user_prompt": messages[1]["content"],
-        "response": response_content
-    }
-    logger.info(f"Prompt Log: {json.dumps(log_entry, indent=2)}")
+
 
 def AskChatGPT_with_context(filepath, i, j, country, index):
     message2, behaviour2 = create_message(filepath)
@@ -81,7 +52,7 @@ def AskChatGPT_with_context(filepath, i, j, country, index):
     
     # Create a query engine with more comprehensive retrieval settings
     query_engine = index.as_query_engine(
-        similarity_top_k=5,  # Retrieve top 5 most relevant chunks
+        similarity_top_k=2,  # Retrieve top 5 most relevant chunks
         response_mode="tree_summarize"  # Synthesize information from multiple chunks
     )
     
@@ -101,7 +72,7 @@ def AskChatGPT_with_context(filepath, i, j, country, index):
     
     # Create messages with enhanced context included
     messages = [
-        {"role": "system", "content": behaviour2[j][i] + " Base your answer primarily on the provided context from party documents.\nRelevant context from party documents:\n{detailed_context}\n\n Use this comprehensive context to inform your response."},
+        {"role": "system", "content": behaviour2[j][i] + f"Base your answer primarily on the provided context from party documents.\nRelevant context from party documents:\n{detailed_context}\n\n Use this comprehensive context to inform your response."},
         {"role": "user", "content": message2[j][i]},
     ]
     
@@ -109,22 +80,24 @@ def AskChatGPT_with_context(filepath, i, j, country, index):
 
     temperature = 0
     max_tokens = 200
+    top_p = 0.1
+    frequency_penalty = 0
+    presence_penalty = 0
 
     response = openai_client.chat.completions.create(
         model=modelspec,
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
-        top_p=1,
-        frequency_penalty=1,
-        presence_penalty=1
+        top_p=top_p,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty
     )
 
     response_content = response.choices[0].message.content
 
     country,num_parties,num_questions,data, party_names,Party_Full_Names, questions, data_Country= SpecsOfData(filepath)
     # Log the prompt and response
-    log_prompt(messages, response_content, Party_Full_Names[j], questions[i])
 
     # Remove ```json and ``` if present
     response_content = response_content.replace('```json', '').replace('```', '')
@@ -146,6 +119,9 @@ def AskChatGPT(filepath, i, j, country):
     ]
     temperature = 0
     max_tokens = 200 
+    top_p = 0.1
+    frequency_penalty = 0
+    presence_penalty = 0
 
     # # Uncomment below for actual ChatGPT usage
     response = openai_client.chat.completions.create(
@@ -153,14 +129,15 @@ def AskChatGPT(filepath, i, j, country):
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
-        top_p=1,
-        frequency_penalty=1,
-        presence_penalty=1
+        top_p=top_p,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty
     )
     # print(response.choices[0].message.content)
     response_content = response.choices[0].message.content
     # Log the prompt and response
-    log_prompt(messages, response_content, Party_Full_Names[j], questions[i])
+
+    country,num_parties,num_questions,data, party_names,Party_Full_Names, questions, data_Country= SpecsOfData(filepath)
     
     # Remove ```json and ``` if present
     response_content = response_content.replace('```json', '').replace('```', '')
@@ -170,7 +147,18 @@ def AskChatGPT(filepath, i, j, country):
         print(f"Error decoding JSON response: {response_content}")
         return {}
 
-
+def process_question(args):
+    i, j, filepath, country, is_rag_context, index = args
+    try:
+        if is_rag_context:
+            response = AskChatGPT_with_context(filepath, i, j, country, index)
+        else:
+            response = AskChatGPT(filepath, i, j, country)
+        time.sleep(0.1)  # Add a small delay to avoid hitting rate limits
+        return (i, j, response)
+    except Exception as e:
+        print(f"Error processing question: {e}")
+        return (i, j, {})
 
 def execute_calc2(filepath):
     country, party_names_length, num_unique_questions, data_Party, party_names, full_party_names, unique_questions, party_answers = SpecsOfData(filepath)
@@ -185,41 +173,50 @@ def execute_calc2(filepath):
         unique_questions = unique_questions[:num_unique_questions]
     
     results = []
-    print("party_names_length", party_names_length)
-    print("num_unique_questions", num_unique_questions)
+    # print("party_names_length", party_names_length)
+    # print("num_unique_questions", num_unique_questions)
     
     # Create a matrix to store answers
     answer_matrix = np.zeros((num_unique_questions, party_names_length))
-    # Calculate total iterations for progress bar
-    total_iterations = party_names_length * num_unique_questions
-    current_iteration = 0
     
-    for i in range(party_names_length):
-        for j in range(num_unique_questions):
-            if is_rag_context:
-                response = AskChatGPT_with_context(filepath, i, j, country, index)
-            else:
-                response = AskChatGPT(filepath, i, j, country)
-            
-            # Store the response in results list
-            results.append({
-                "Party_Name": party_names[i],
-                "Question_Label": unique_questions[j],
-                "Answer": response
-            })
-            
-            # Convert response to numerical value (-1, 0, 1)
-            try:
-                print('ai answer', response["AI_answer"])
-                answer_matrix[j][i] = convert_answer_to_number(response["AI_answer"])
-            except:
-                print(f"Error converting answer to number: {response}")
-                answer_matrix[j][i] = 0  # Default to neutral if there's an error
-            
-            # Update and display progress bar
-            current_iteration += 1
-            progress = int(50 * current_iteration / total_iterations)
-            print(f"\rProgress: [{'=' * progress}{' ' * (50-progress)}] {current_iteration}/{total_iterations}", end='')
+    # Prepare arguments for parallel processing
+    args_list = [
+        (i, j, filepath, country, is_rag_context, index)
+        for i in range(party_names_length)
+        for j in range(num_unique_questions)
+    ]
+    
+    # Calculate total iterations for progress bar
+    total_iterations = len(args_list)
+    
+    # Initialize the process pool
+    num_processes = mp.cpu_count() - 1  # Leave one CPU core free
+    pool = mp.Pool(processes=num_processes)
+    
+    # Process questions in parallel with progress tracking
+    for idx, (i, j, response) in enumerate(pool.imap_unordered(process_question, args_list)):
+        # Store the response in results list
+        results.append({
+            "Party_Name": party_names[i],
+            "Question_Label": unique_questions[j],
+            "Answer": response
+        })
+        
+        # Convert response to numerical value (-1, 0, 1)
+        try:
+            # print('ai answer', response["AI_answer"])
+            answer_matrix[j][i] = convert_answer_to_number(response["AI_answer"])
+        except:
+            print(f"Error converting answer to number: {response}")
+            answer_matrix[j][i] = 0  # Default to neutral if there's an error
+        
+        # Update and display progress bar
+        progress = int(50 * (idx + 1) / total_iterations)
+        print(f"\rProgress: [{'=' * progress}{' ' * (50-progress)}] {idx + 1}/{total_iterations}", end='')
+    
+    # Close the pool
+    pool.close()
+    pool.join()
     
     print()  # New line after progress bar completes
     # Save the matrix to CSV
