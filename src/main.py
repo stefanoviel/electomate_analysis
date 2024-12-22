@@ -1,5 +1,5 @@
 from data_processing import load_and_process_data
-from gpt_interface import execute_calc2
+from gpt_interface import execute_calc_with_manifestos
 from visualization import create_comparison_plot
 import numpy as np
 import json
@@ -10,7 +10,7 @@ def main():
     
     # Step 1: Generate AI answers
     print("Generating AI answers...")
-    ai_matrix = execute_calc2(json_file_path)
+    ai_matrix = execute_calc_with_manifestos(json_file_path)
     print("AI answers generated and saved to 'results.json' and 'results.csv'")
     
     # Step 2: Load and process both original and AI data
