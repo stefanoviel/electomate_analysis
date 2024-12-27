@@ -1,2 +1,6 @@
 downloaded_pdfs/
 index_store/
+
+.env
+.env*
+.env*
