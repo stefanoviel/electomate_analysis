@@ -4,3 +4,6 @@ index_store/
 .env
 .env*
 .env*
+.env
+src/.env
+src2/.env
