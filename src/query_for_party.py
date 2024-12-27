@@ -73,4 +73,4 @@ load_or_create_indices()
 query = "What is the party's position on climate change?"
 party = "FDP"
 response = query_party_manifesto(party, query)
-print(f"{party}'s response:", response)
+#print(f"{party}'s response:", response)

@@ -1,0 +1,705 @@
+# Combined Python Scripts
+
+
+================================================================================
+# File: src/visualization.py
+================================================================================
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import textwrap
+
+def create_comparison_plot(original_matrix, ai_matrix, questions, party_names):
+    # Calculate difference matrix
+    diff_matrix = np.abs(original_matrix - ai_matrix)
+    
+    # Create color matrix
+    color_matrix = np.zeros_like(diff_matrix)
+    color_matrix[diff_matrix == 0] = 2    # Full agreement (blue)
+    color_matrix[diff_matrix == 1] = 1    # Partial agreement (light blue)
+    color_matrix[diff_matrix == 2] = 0    # Disagreement (white)
+
+    # Create plot with increased height to prevent overlap
+    plt.figure(figsize=(15, 15))
+    colors = ['white', 'lightblue', 'blue']
+    cmap = sns.color_palette(colors)
+    
+    # Format long questions with more width to reduce line breaks
+    wrapped_questions = ['\n'.join(textwrap.wrap(q, width=70)) for q in questions]
+    
+    sns.heatmap(color_matrix, 
+                xticklabels=party_names, 
+                yticklabels=wrapped_questions,
+                cmap=cmap,
+                cbar=False)
+
+    plt.title('Comparison between Original Party Answers\nand AI Predictions')
+    plt.xlabel('Political Parties')
+    plt.ylabel('Questions')
+    
+    # Rotate x-axis labels for better readability
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
+    
+    # Adjust subplot parameters to give more space to y-axis labels
+    plt.subplots_adjust(left=0.3)
+
+    # Add legend
+    legend_elements = [plt.Rectangle((0,0),1,1, facecolor='blue', label='Full Agreement'),
+                      plt.Rectangle((0,0),1,1, facecolor='lightblue', label='Partial Agreement'),
+                      plt.Rectangle((0,0),1,1, facecolor='white', label='Disagreement')]
+    plt.legend(handles=legend_elements, loc='center left', bbox_to_anchor=(1, 0.5))
+
+    plt.tight_layout()
+    plt.savefig('comparison_plot_rag_1.png', bbox_inches='tight', dpi=300)
+    plt.show()
+
+
+================================================================================
+# File: src/query_for_party.py
+================================================================================
+
+import requests
+from llama_index.core import VectorStoreIndex, Document, ServiceContext
+from llama_index.core.storage.storage_context import StorageContext
+from pathlib import Path
+import os
+from PyPDF2 import PdfReader
+
+party_manifestos = {
+    "FDP": "https://www.fdp.de/sites/default/files/2024-03/2024-01-28_ept_das-programm-der-fdp-zur-europawahl-2024-1-_0.pdf",
+    "CDU": "https://www.europawahl.cdu.de/sites/www.europawahlprogramm.cdu.de/files/docs/europawahlprogramm-cdu-csu-2024_0.pdf",
+    # Add other parties...
+}
+
+def download_pdf(url, party_name):
+    response = requests.get(url)
+    pdf_path = f"manifestos/{party_name}_manifesto.pdf"
+    os.makedirs("manifestos", exist_ok=True)
+    
+    with open(pdf_path, "wb") as f:
+        f.write(response.content)
+    return pdf_path
+
+
+def extract_text_from_pdf(pdf_path):
+    reader = PdfReader(pdf_path)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+# Create a directory for storing indices
+PERSIST_DIR = "./stored_indices"
+party_indices = {}
+
+def load_or_create_indices():
+    for party, url in party_manifestos.items():
+        party_persist_dir = os.path.join(PERSIST_DIR, party)
+        
+        # Check if index already exists
+        if os.path.exists(os.path.join(party_persist_dir, "docstore.json")):  # Check for actual index file
+            # Load existing index
+            storage_context = StorageContext.from_defaults(persist_dir=party_persist_dir)
+            index = VectorStoreIndex.load(storage_context=storage_context)
+        else:
+            # Create new index
+            pdf_path = download_pdf(url, party)
+            text = extract_text_from_pdf(pdf_path)
+            documents = [Document(text=text)]
+            
+            # Create and save index
+            os.makedirs(party_persist_dir, exist_ok=True)
+            index = VectorStoreIndex.from_documents(documents)  # Create index first
+            
+            # Then set up storage context and persist
+            storage_context = StorageContext.from_defaults(persist_dir=party_persist_dir)
+            index.set_storage_context(storage_context)
+            index.storage_context.persist()
+            
+        party_indices[party] = index
+
+def query_party_manifesto(party_name, query):
+    if party_name in party_indices:
+        query_engine = party_indices[party_name].as_query_engine()
+        response = query_engine.query(query)
+        return response
+    else:
+        return f"Party {party_name} not found"
+
+# Load or create indices when script starts
+load_or_create_indices()
+
+# Example usage
+query = "What is the party's position on climate change?"
+party = "FDP"
+response = query_party_manifesto(party, query)
+print(f"{party}'s response:", response)
+
+
+================================================================================
+# File: src/main.py
+================================================================================
+
+from data_processing import load_and_process_data
+from gpt_interface import execute_calc2
+from visualization import create_comparison_plot
+import numpy as np
+import json
+
+def main():
+    # Set the cutoffs for parties and questions
+    json_file_path = "Party_Answers_Converted_de.json"
+    
+    # Step 1: Generate AI answers
+    print("Generating AI answers...")
+    ai_matrix = execute_calc2(json_file_path)
+    print("AI answers generated and saved to 'results.json' and 'results.csv'")
+    
+    # Step 2: Load and process both original and AI data
+    print("\nProcessing data for comparison...")
+    original_matrix, questions, party_names = load_and_process_data(json_file_path)
+    
+    # Load short questions from JSON file
+    with open('short_question.json', 'r', encoding='utf-8') as file:
+        short_questions = json.load(file)['questions']
+    
+    # Replace long questions with short versions
+    questions = short_questions[:len(questions)]
+
+    # Step 3: Create and save comparison plot
+    print("\nCreating comparison plot...")
+    create_comparison_plot(original_matrix, ai_matrix, questions, party_names)
+    print("Comparison plot saved as 'comparison_plot_1.png'")
+
+
+    # Print statistics
+    agreement = np.sum(original_matrix == ai_matrix)
+    total = original_matrix.size
+    print(f"\nStatistics:")
+    print(f"Total number of answers: {total}")
+    print(f"Number of matching answers: {agreement}")
+    print(f"Agreement percentage: {(agreement/total)*100:.2f}%")
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+# File: src/gpt_interface.py
+================================================================================
+
+import json
+import time
+import numpy as np
+
+from datetime import datetime
+from pathlib import Path
+from config import openai_client, modelspec, cutoff_parties, cutoff_questions, is_rag_context
+from data_processing import SpecsOfData, convert_answer_to_number
+
+from llama_index.core import StorageContext, load_index_from_storage
+import multiprocessing as mp
+from functools import partial
+
+
+# Load the index from storage
+# print("Loading index...")
+storage_context = StorageContext.from_defaults(persist_dir="index_store")
+index = load_index_from_storage(storage_context)
+# print("Index loaded!")
+
+
+
+# Function to create messages and behaviors for each question and party
+def create_message(filepath):
+    country,num_parties,num_questions,data, party_names,Party_Full_Names, questions, data_Country= SpecsOfData(filepath)
+    
+    messages_list = [["" for _ in range(len(Party_Full_Names))] for _ in range(len(questions))]
+    behaviour_list = [["" for _ in range(len(Party_Full_Names))] for _ in range(len(questions))]
+
+    for i in range(num_questions):
+        for j in range(num_parties):
+            messages_list[i][j] = f"question: {questions[i]}"
+            behaviour_list[i][j] = (
+                f'You are the political party {Party_Full_Names[j]} from {country}. '
+                f'You will be asked a question that you have to answer in this JSON format: '
+                f'"question" : "{questions[i]}", '
+                f'"Full Party Name" : "{Party_Full_Names[j]}", '
+                f'"AI_answer" : "<MUST BE EXACTLY ONE OF: disagree, neutral, agree>", '
+                f'"AI_answer_reason" : "<your reasoning for your answer above, 2 sentences max.>", '
+                f'"AI_confidence" : "<An integer number between 0 and 100 of the confidence of your answer>"'
+            )
+
+    return messages_list,behaviour_list
+
+
+
+def AskChatGPT_with_context(filepath, i, j, country, index):
+    message2, behaviour2 = create_message(filepath)
+    
+    # Extract the question from the prepared messages
+    question = message2[j][i].replace("question: ", "")
+    
+    # Create a query engine with more comprehensive retrieval settings
+    query_engine = index.as_query_engine(
+        similarity_top_k=2,  # Retrieve top 5 most relevant chunks
+        response_mode="tree_summarize"  # Synthesize information from multiple chunks
+    )
+    
+    # Query with more detailed parameters
+    llm_response = query_engine.query(
+        question
+    )
+    
+    # Get both the response and source nodes
+    context = str(llm_response)
+    source_nodes = llm_response.source_nodes
+    
+    # Build comprehensive context including source information
+    detailed_context = context + "\n\nAdditional relevant information:\n"
+    for idx, node in enumerate(source_nodes, 1):
+        detailed_context += f"\nSource {idx}:\n{node.node.text}\n"
+    
+    # Create messages with enhanced context included
+    messages = [
+        {"role": "system", "content": behaviour2[j][i] + f"Base your answer primarily on the provided context from party documents.\nRelevant context from party documents:\n{detailed_context}\n\n Use this comprehensive context to inform your response."},
+        {"role": "user", "content": message2[j][i]},
+    ]
+    
+    print(messages)
+
+    temperature = 0
+    max_tokens = 200
+    top_p = 0.1
+    frequency_penalty = 0
+    presence_penalty = 0
+
+    response = openai_client.chat.completions.create(
+        model=modelspec,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        top_p=top_p,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty
+    )
+
+    response_content = response.choices[0].message.content
+
+    country,num_parties,num_questions,data, party_names,Party_Full_Names, questions, data_Country= SpecsOfData(filepath)
+    # Log the prompt and response
+
+    # Remove ```json and ``` if present
+    response_content = response_content.replace('```json', '').replace('```', '')
+    try:
+        return json.loads(response_content)
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON response: {response_content}")
+        return {}
+
+
+
+# Function to ask ChatGPT for an answer to a specific question for a specific party
+def AskChatGPT(filepath, i, j, country):
+    message2, behaviour2 = create_message(filepath)
+
+    messages = [
+        {"role": "system", "content": behaviour2[j][i]},  # j is question index, i is party index
+        {"role": "user", "content": message2[j][i]},
+    ]
+    temperature = 0
+    max_tokens = 200 
+    top_p = 0.1
+    frequency_penalty = 0
+    presence_penalty = 0
+
+    # # Uncomment below for actual ChatGPT usage
+    response = openai_client.chat.completions.create(
+        model=modelspec,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        top_p=top_p,
+        frequency_penalty=frequency_penalty,
+        presence_penalty=presence_penalty
+    )
+    # print(response.choices[0].message.content)
+    response_content = response.choices[0].message.content
+    # Log the prompt and response
+
+    country,num_parties,num_questions,data, party_names,Party_Full_Names, questions, data_Country= SpecsOfData(filepath)
+    
+    # Remove ```json and ``` if present
+    response_content = response_content.replace('```json', '').replace('```', '')
+    try:
+        return json.loads(response_content)
+    except json.JSONDecodeError:
+        print(f"Error decoding JSON response: {response_content}")
+        return {}
+
+def process_question(args):
+    i, j, filepath, country, is_rag_context, index = args
+    try:
+        if is_rag_context:
+            response = AskChatGPT_with_context(filepath, i, j, country, index)
+        else:
+            response = AskChatGPT(filepath, i, j, country)
+        time.sleep(0.1)  # Add a small delay to avoid hitting rate limits
+        return (i, j, response)
+    except Exception as e:
+        print(f"Error processing question: {e}")
+        return (i, j, {})
+
+def execute_calc2(filepath):
+    country, party_names_length, num_unique_questions, data_Party, party_names, full_party_names, unique_questions, party_answers = SpecsOfData(filepath)
+    
+    # Apply cutoffs
+    if cutoff_parties > 0:
+        party_names_length = min(cutoff_parties, party_names_length)
+        party_names = party_names[:party_names_length]
+        
+    if cutoff_questions > 0:
+        num_unique_questions = min(cutoff_questions, num_unique_questions)
+        unique_questions = unique_questions[:num_unique_questions]
+    
+    results = []
+    # print("party_names_length", party_names_length)
+    # print("num_unique_questions", num_unique_questions)
+    
+    # Create a matrix to store answers
+    answer_matrix = np.zeros((num_unique_questions, party_names_length))
+    
+    # Prepare arguments for parallel processing
+    args_list = [
+        (i, j, filepath, country, is_rag_context, index)
+        for i in range(party_names_length)
+        for j in range(num_unique_questions)
+    ]
+    
+    # Calculate total iterations for progress bar
+    total_iterations = len(args_list)
+    
+    # Initialize the process pool
+    num_processes = mp.cpu_count() - 1  # Leave one CPU core free
+    pool = mp.Pool(processes=num_processes)
+    
+    # Process questions in parallel with progress tracking
+    for idx, (i, j, response) in enumerate(pool.imap_unordered(process_question, args_list)):
+        # Store the response in results list
+        results.append({
+            "Party_Name": party_names[i],
+            "Question_Label": unique_questions[j],
+            "Answer": response
+        })
+        
+        # Convert response to numerical value (-1, 0, 1)
+        try:
+            # print('ai answer', response["AI_answer"])
+            answer_matrix[j][i] = convert_answer_to_number(response["AI_answer"])
+        except:
+            print(f"Error converting answer to number: {response}")
+            answer_matrix[j][i] = 0  # Default to neutral if there's an error
+        
+        # Update and display progress bar
+        progress = int(50 * (idx + 1) / total_iterations)
+        print(f"\rProgress: [{'=' * progress}{' ' * (50-progress)}] {idx + 1}/{total_iterations}", end='')
+    
+    # Close the pool
+    pool.close()
+    pool.join()
+    
+    print()  # New line after progress bar completes
+    # Save the matrix to CSV
+    np.savetxt("results_rag.csv", answer_matrix, delimiter=",")
+    
+    return answer_matrix
+
+
+
+================================================================================
+# File: src/download_pdf.py
+================================================================================
+
+import requests
+import os
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+import time
+
+def create_download_folder():
+    """Create a folder for downloaded PDFs if it doesn't exist"""
+    folder_name = "downloaded_pdfs"
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+    return folder_name
+
+def is_pdf_url(url):
+    """Check if URL directly points to a PDF"""
+    return url.lower().endswith('.pdf')
+
+def get_pdf_links_from_webpage(url):
+    """Extract PDF links from a webpage"""
+    try:
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        pdf_links = []
+        
+        # Find all links
+        for link in soup.find_all('a'):
+            href = link.get('href')
+            if href and href.lower().endswith('.pdf'):
+                # Convert relative URLs to absolute URLs
+                if not href.startswith(('http://', 'https://')):
+                    href = requests.compat.urljoin(url, href)
+                pdf_links.append(href)
+                
+        return pdf_links
+    except Exception as e:
+        print(f"Error processing {url}: {str(e)}")
+        return []
+
+def download_pdf(url, folder):
+    """Download a PDF file from a URL"""
+    try:
+        # Extract filename from URL
+        parsed_url = urlparse(url)
+        filename = os.path.basename(parsed_url.path)
+        
+        # If filename is empty or doesn't end with .pdf, create a valid filename
+        if not filename or not filename.lower().endswith('.pdf'):
+            filename = f"document_{hash(url)}.pdf"
+            
+        filepath = os.path.join(folder, filename)
+        
+        # Download the file
+        response = requests.get(url, timeout=10)
+        
+        # Check if content is actually PDF
+        if 'application/pdf' in response.headers.get('content-type', '').lower():
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+            print(f"Successfully downloaded: {filename}")
+            return True
+        else:
+            print(f"Not a PDF file: {url}")
+            return False
+            
+    except Exception as e:
+        print(f"Error downloading {url}: {str(e)}")
+        return False
+
+def main():
+    # Create download folder
+    download_folder = create_download_folder()
+    
+    # Read URLs from file
+    with open('WahlprogrammeDEURLs.txt', 'r') as file:
+        urls = [line.strip() for line in file if line.strip()]
+    
+    # Process each URL
+    for url in urls:
+        print(f"\nProcessing: {url}")
+        
+        # If URL directly points to PDF, download it
+        if is_pdf_url(url):
+            download_pdf(url, download_folder)
+        else:
+            # If it's a webpage, look for PDF links
+            pdf_links = get_pdf_links_from_webpage(url)
+            for pdf_url in pdf_links:
+                print(f"Found PDF link: {pdf_url}")
+                download_pdf(pdf_url, download_folder)
+        
+        # Add a small delay to be nice to servers
+        time.sleep(1)
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+# File: src/data_processing.py
+================================================================================
+
+import json
+import re
+import numpy as np
+from config import cutoff_questions, cutoff_parties
+
+def clean_json_string(json_string):
+    json_string = re.sub(r'[\x00-\x1F\x7F]', '', json_string)
+    return json_string
+
+def SpecsOfData(file_path):
+    with open(file_path, 'r', encoding='utf-8') as file:
+        raw_data = file.read()
+        cleaned_data = clean_json_string(raw_data)
+        data_Party = json.loads(cleaned_data)
+    
+    party_names = data_Party['party_names']
+    full_party_names = data_Party['party_full_names']
+
+    unique_questions = set()
+    for answer in data_Party['party_answers']:
+        if answer['Party_Name'] == party_names[0]:
+            unique_questions.add(answer['Question_Label'])
+
+    num_unique_questions = len(unique_questions)
+    party_names_length = len(party_names)
+
+
+
+    unique_questions = list(unique_questions)
+    if cutoff_questions != 0:
+        unique_questions = unique_questions[:cutoff_questions]
+        num_unique_questions = cutoff_questions
+    
+    if cutoff_parties != 0:
+        full_party_names = full_party_names[:cutoff_parties]
+        party_names = party_names[:cutoff_parties]
+        party_names_length = cutoff_parties
+
+
+    return (
+        "Germany",
+        party_names_length,
+        num_unique_questions,
+        data_Party,
+        party_names, 
+        full_party_names,
+        unique_questions,
+        data_Party['party_answers']
+    )
+
+def convert_answer_to_number(answer):
+    answer_map = {
+        "disagree": -1,
+        "neutral": 0,
+        "agree": 1
+    }
+    return answer_map.get(answer.lower(), 0)
+
+def load_and_process_data(original_file):
+    with open(original_file, 'r', encoding='utf-8') as file:
+        raw_data = file.read()
+        cleaned_data = clean_json_string(raw_data)
+        original_data = json.loads(cleaned_data)
+
+
+    party_names = original_data['party_names']
+    if cutoff_parties != 0:
+        party_names = party_names[:cutoff_parties]
+        num_parties = cutoff_parties
+    
+    questions = []
+    for answer in original_data['party_answers']:
+        questions.append(answer['Question_Label'])
+
+    questions = list(set(questions))
+
+    num_questions = len(questions)
+    num_parties = len(party_names)
+    
+    if cutoff_questions != 0:
+        questions = questions[:cutoff_questions]
+        num_questions = cutoff_questions
+    
+    original_matrix = np.zeros((num_questions, num_parties))
+
+    for answer in original_data['party_answers']:
+        if answer['Party_Name'] in party_names:
+            party_idx = party_names.index(answer['Party_Name'])
+            if answer['Question_Label'] in questions:
+                q_idx = questions.index(answer['Question_Label'])
+                original_matrix[q_idx][party_idx] = answer['Party_Answer']
+
+    print(f"Processed {num_questions} questions for {num_parties} parties")
+    return original_matrix, questions, party_names
+
+def create_original_matrix(json_file_path):
+    with open(json_file_path, 'r', encoding='utf-8') as file:
+        raw_data = file.read()
+        cleaned_data = clean_json_string(raw_data)
+        data = json.loads(cleaned_data)
+    
+    party_names = data['party_names'][:cutoff_parties]
+    
+    questions = []
+    for answer in data['party_answers']:
+        if answer['Party_Name'] == party_names[0]:
+            questions.append(answer['Question_Label'])
+    questions = questions[:cutoff_questions]
+    
+    num_questions = len(questions)
+    num_parties = len(party_names)
+    matrix = np.zeros((num_questions, num_parties))
+    
+    for answer in data['party_answers']:
+        if answer['Party_Name'] in party_names:
+            party_idx = party_names.index(answer['Party_Name'])
+            try:
+                q_idx = questions.index(answer['Question_Label'])
+                matrix[q_idx][party_idx] = answer['Party_Answer']
+            except ValueError:
+                continue
+
+    csv_file = "original_matrix.csv"
+    np.savetxt(csv_file, matrix, delimiter=",")
+    
+    return matrix, questions, party_names
+
+
+================================================================================
+# File: src/create_index.py
+================================================================================
+
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from tqdm import tqdm
+
+print("Loading documents...")
+# Add tqdm to show progress while loading documents
+documents = SimpleDirectoryReader("downloaded_pdfs").load_data()
+
+print("Creating index...")
+# Wrap the documents with tqdm to show progress while indexing
+index = VectorStoreIndex.from_documents(
+    tqdm(documents, desc="Indexing documents", unit="doc")
+)
+
+print("Persisting index to disk...")
+# Save the index
+index.storage_context.persist(persist_dir="index_store")
+print("Done!")
+
+
+
+================================================================================
+# File: src/config.py
+================================================================================
+
+import os
+from dotenv import load_dotenv
+import openai
+
+# Disable parallelism for tokenizers
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# Load environment variables from .env file
+load_dotenv(dotenv_path='.env')
+
+# Initialize OpenAI client with API key from environment variables
+api_key = os.getenv("OPENAI_API_KEY")
+openai_client = openai.OpenAI(api_key=api_key)
+
+# Set OpenAI API key for LlamaIndex
+import openai
+openai.api_key = api_key
+
+# Model specifications and cutoffs
+modelspec = "gpt-4o"  # gpt-4, gpt-4o, gpt-4o-mini
+cutoff_questions = 0
+cutoff_parties = 1
+is_rag_context = True
+
+

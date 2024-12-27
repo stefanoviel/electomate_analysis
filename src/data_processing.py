@@ -2,6 +2,8 @@ import json
 import re
 import numpy as np
 from config import cutoff_questions, cutoff_parties
+import pprint as pp
+
 
 def clean_json_string(json_string):
     json_string = re.sub(r'[\x00-\x1F\x7F]', '', json_string)
@@ -16,27 +18,28 @@ def SpecsOfData(file_path):
     party_names = data_Party['party_names']
     full_party_names = data_Party['party_full_names']
 
-    unique_questions = set()
+    unique_questions = []
     for answer in data_Party['party_answers']:
         if answer['Party_Name'] == party_names[0]:
-            unique_questions.add(answer['Question_Label'])
+            unique_questions.append(answer['Question_Label'])
 
     num_unique_questions = len(unique_questions)
     party_names_length = len(party_names)
 
 
 
-    unique_questions = list(unique_questions)
+   
     if cutoff_questions != 0:
         unique_questions = unique_questions[:cutoff_questions]
         num_unique_questions = cutoff_questions
     
+
     if cutoff_parties != 0:
         full_party_names = full_party_names[:cutoff_parties]
         party_names = party_names[:cutoff_parties]
         party_names_length = cutoff_parties
 
-
+    #print(unique_questions)
     return (
         "Germany",
         party_names_length,
@@ -70,9 +73,16 @@ def load_and_process_data(original_file):
     
     questions = []
     for answer in original_data['party_answers']:
-        questions.append(answer['Question_Label'])
+        if answer['Party_Name'] == "SPD": #needed to have an ordered output for questions
+            questions.append(answer['Question_Label'])
 
-    questions = list(set(questions))
+    #questions = list(set(questions))
+    #print(questions)
+    with open("llm_interaction_log.txt", "a", encoding="utf-8") as log_file:
+        log_file.write("Questions:\n")
+        for question in questions:
+            log_file.write(f"{question}\n")
+
 
     num_questions = len(questions)
     num_parties = len(party_names)
@@ -83,14 +93,22 @@ def load_and_process_data(original_file):
     
     original_matrix = np.zeros((num_questions, num_parties))
 
+    # Create a dictionary to map question numbers to their indices
+    question_index_map = {answer['Question_Number']: idx for idx, answer in enumerate(original_data['party_answers']) if answer['Party_Name'] == party_names[0]}
+
     for answer in original_data['party_answers']:
         if answer['Party_Name'] in party_names:
             party_idx = party_names.index(answer['Party_Name'])
-            if answer['Question_Label'] in questions:
-                q_idx = questions.index(answer['Question_Label'])
+            q_idx = answer['Question_Number'] - 1
+            #print(fq_idx)
+            if q_idx is not None and q_idx < num_questions:
                 original_matrix[q_idx][party_idx] = answer['Party_Answer']
+            else:
+                print(f"Warning: Question index {q_idx} is out of bounds for question number {answer['Question_Number']}")
 
     print(f"Processed {num_questions} questions for {num_parties} parties")
+
+    pp.pprint(original_matrix)
     return original_matrix, questions, party_names
 
 def create_original_matrix(json_file_path):
